@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>smartAlert</title>
+<style>
+.simpleAlert-cont .pink{color:#fa4b9b}
+.simpleAlert-mask{position:fixed;top:0;left:0;bottom:0;right:0;background:rgba(0,0,0,.6)}
+.simpleAlert-wrap{overflow:auto;height:100%}
+.simpleAlert-cont{padding:.6667rem;position:fixed;top:50%;left:50%;background-color:#fff;-webkit-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);transform:translate(-50%,-50%);border-radius:.0667rem;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;width:8.5333rem;font-size:.4rem;text-align:center}
+.simpleAlert-cont .close{position:absolute;right:-.2667rem;top:-.2667rem;width:.8rem;height:.8rem;line-height:.8rem;background-color:#ebebeb;border-radius:100%;font-style:normal;color:#c3c3c3;font-size:.5333rem;cursor:pointer}
+.simpleAlert-cont .btn{margin-top:.4rem;padding:0 .5333rem;display:inline-block;vertical-align:top;min-width:2.1333rem;height:1.0667rem;line-height:1.0667rem;background-color:#fa4b9b;color:#fff;border-radius:.1333rem}
+</style>
+<script>!function(e,t){function i(){var t=n.getBoundingClientRect().width;t/m>640&&(t=640*m);var i=t/10;n.style.fontSize=i+"px",d.rem=e.rem=i}var a,r=e.document,n=r.documentElement,o=r.querySelector('meta[name="viewport"]'),l=r.querySelector('meta[name="flexible"]'),m=0,s=0,d=t.flexible||(t.flexible={});if(o){console.warn("将根据已有的meta标签来设置缩放比例");var p=o.getAttribute("content").match(/initial\-scale=([\d\.]+)/);p&&(s=parseFloat(p[1]),m=parseInt(1/s))}else if(l){var c=l.getAttribute("content");if(c){var u=c.match(/initial\-dpr=([\d\.]+)/),f=c.match(/maximum\-dpr=([\d\.]+)/);u&&(m=parseFloat(u[1]),s=parseFloat((1/m).toFixed(2))),f&&(m=parseFloat(f[1]),s=parseFloat((1/m).toFixed(2)))}}if(!m&&!s){var v=(e.navigator.appVersion.match(/android/gi),e.navigator.appVersion.match(/iphone/gi)),h=e.devicePixelRatio;m=v?h>=3&&(!m||m>=3)?3:h>=2&&(!m||m>=2)?2:1:1,s=1/m}if(n.setAttribute("data-dpr",m),!o)if(o=r.createElement("meta"),o.setAttribute("name","viewport"),o.setAttribute("content","initial-scale="+s+", maximum-scale="+s+", minimum-scale="+s+", user-scalable=no"),n.firstElementChild)n.firstElementChild.appendChild(o);else{var x=r.createElement("div");x.appendChild(o),r.write(x.innerHTML)}e.addEventListener("resize",function(){clearTimeout(a),a=setTimeout(i,300)},!1),e.addEventListener("pageshow",function(e){e.persisted&&(clearTimeout(a),a=setTimeout(i,300))},!1),"complete"===r.readyState?r.body.style.fontSize=12*m+"px":r.addEventListener("DOMContentLoaded",function(e){r.body.style.fontSize=12*m+"px"},!1),i(),d.dpr=e.dpr=m,d.refreshRem=i,d.rem2px=function(e){var t=parseFloat(e)*this.rem;return"string"==typeof e&&e.match(/rem$/)&&(t+="px"),t},d.px2rem=function(e){var t=parseFloat(e)/this.rem;return"string"==typeof e&&e.match(/px$/)&&(t+="rem"),t}}(window,window.lib||(window.lib={}));</script>
+</head>
+<body>
+    
+<a href="javascript:;" class="J_alert">唤起弹层</a>
+
+<script src="http://cdn.bootcss.com/zepto/1.2.0/zepto.min.js"></script>
+<script>
+(function() {
+
+    function SmartAlert(options) {
+		this.opt = $.extend(true, {
+			pre: 'simpleAlert', //className前缀
+			msg: '这是弹层的文字', //弹层正文部分
+			buttonText: '确定', //弹层按钮文本
+			isShowConfirmButton: true, //是否显示按钮
+			zIndex: 1000,
+			fnShow: function() {}, //弹层弹出时触发
+			fnHide: function() {}, //弹层关闭时触发
+			fnConfirmClick: function() {} //弹层"确定"按钮被点击时触发
+		}, options);
+
+		this.mask = this.opt.pre + '-mask';
+		this.cont = this.opt.pre + '-cont';
+		this.wrap = this.opt.pre + '-wrap';
+
+		this.WINDOW_HEIGHT = $(window).height();
+
+		this.init();
+	}
+
+	SmartAlert.prototype = {
+		constructor: SmartAlert,
+		init: function() {
+			//解决第一个弹层不消失 第二个弹层弹起后的重叠问题
+			$(document.body).attr('isSaltShow') && this.reset();
+
+			//插入dom
+			this.dom();
+
+			//解决高度不够问题
+			(this.$cont.height() >= this.WINDOW_HEIGHT) && this.$cont.height(this.WINDOW_HEIGHT);
+
+			//触发弹层弹出回调函数
+			this.opt.fnShow.call(this); //弹层弹出
+
+			//触发绑定事件
+			this.bindEvent();
+		},
+		hide: function() {
+			this.$mask.remove();
+			this.$cont.remove();
+			$(document.body).removeAttr('isSaltShow');
+			this.opt.fnHide.call(this);
+		},
+		bindEvent: function() {
+			var me = this;
+			this.$cancelButton.on('click', function() {
+				me.hide();
+			});
+
+			if (this.opt.isShowConfirmButton) {
+				this.$confirmButton.on('click', function() {
+					me.opt.fnConfirmClick.call(me);
+				});
+			}
+		},
+		reset: function() { //强制重置弹层
+			$('.' + this.mask).remove();
+			$('.' + this.cont).remove();
+			$(document.body).removeAttr('isSaltShow');
+		},
+		dom: function() {
+			this.$mask = $('<div class="' + this.mask + '">').css('z-index', this.opt.zIndex).appendTo(document.body);
+			this.$cont = $('<div class="' + this.cont + '">').css('z-index', +this.opt.zIndex + 1).appendTo(document.body);
+			this.$wrap = $('<div class="' + this.wrap + '">').appendTo(this.$cont);
+			this.$text = $('<div class="text">' + this.opt.msg + '</div>').appendTo(this.$wrap);
+			this.$cancelButton = $('<i class="close">x</i>').appendTo(this.$cont);
+			this.$confirmButton = this.opt.isShowConfirmButton ? $('<a class="btn" href="javascript:;">' + this.opt.buttonText + '</a>').appendTo(this.$wrap) : '';
+
+			$(document.body).attr('isSaltShow', 1);
+		}
+	};
+
+	var salt = function(config) {
+		return new SmartAlert(config);
+	};
+
+
+    $('.J_alert').on('click', function() {
+        salt({
+            msg: '已向您尾号<span class="pink">8888</span>的手机号发送验证码',
+            fnConfirmClick: function() {
+                alert('点击确定')
+            }
+        });
+    })
+
+
+})();
+</script>
+</body>
+</html>
